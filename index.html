@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Financiero AppSheet</title>
+    <title>Análisis Financiero - Mes y Año</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <style>
         * {
@@ -29,6 +29,7 @@
             gap: 12px;
             align-items: center;
             margin-bottom: 24px;
+            flex-wrap: wrap;
         }
         .header label {
             font-weight: 500;
@@ -109,27 +110,48 @@
         .legend strong {
             color: #333;
         }
+        .sin-datos {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+            color: #856404;
+            display: none;
+            margin-bottom: 24px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <label for="mesSelect">Mes:</label>
-        <select id="mesSelect">
-            <option value="Ene">Enero</option>
-            <option value="Feb">Febrero</option>
-            <option value="Mar">Marzo</option>
-            <option value="Abr">Abril</option>
-            <option value="May" selected>Mayo</option>
-            <option value="Jun">Junio</option>
-            <option value="Jul">Julio</option>
-            <option value="Ago">Agosto</option>
-            <option value="Sep">Septiembre</option>
-            <option value="Oct">Octubre</option>
-            <option value="Nov">Noviembre</option>
-            <option value="Dic">Diciembre</option>
+        <label for="anoSelect">Año:</label>
+        <select id="anoSelect">
+            <option value="2024" selected>2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
         </select>
+        
+        <label for="mesSelect" style="margin-left: 24px;">Mes:</label>
+        <select id="mesSelect">
+            <option value="01">Enero</option>
+            <option value="02">Febrero</option>
+            <option value="03">Marzo</option>
+            <option value="04">Abril</option>
+            <option value="05" selected>Mayo</option>
+            <option value="06">Junio</option>
+            <option value="07">Julio</option>
+            <option value="08">Agosto</option>
+            <option value="09">Septiembre</option>
+            <option value="10">Octubre</option>
+            <option value="11">Noviembre</option>
+            <option value="12">Diciembre</option>
+        </select>
+    </div>
+
+    <div class="sin-datos" id="sinDatos">
+        ⚠️ No hay datos disponibles para el período seleccionado
     </div>
 
     <div id="puntoEquilibrioInfo" class="equilibrio-info">
@@ -172,41 +194,94 @@
 
 <script>
 // ============================================
-// DATOS DE PRUEBA - REEMPLAZA CON TUS DATOS
+// INSTRUCCIONES PARA APPSHEET
 // ============================================
-const datosDetalleOrden = [
-    { date: '05/01/2024', mes: 'May', comision: 150.00, precio_venta: 800.00, total_entrada: 950.00 },
-    { date: '05/01/2024', mes: 'May', comision: 75.50, precio_venta: 420.00, total_entrada: 495.50 },
-    { date: '05/03/2024', mes: 'May', comision: 220.00, precio_venta: 1200.00, total_entrada: 1420.00 },
-    { date: '05/05/2024', mes: 'May', comision: 110.25, precio_venta: 650.00, total_entrada: 760.25 },
-    { date: '05/05/2024', mes: 'May', comision: 89.75, precio_venta: 550.00, total_entrada: 639.75 },
-    { date: '05/08/2024', mes: 'May', comision: 340.00, precio_venta: 1800.00, total_entrada: 2140.00 },
-    { date: '05/10/2024', mes: 'May', comision: 95.50, precio_venta: 520.00, total_entrada: 615.50 },
-    { date: '05/12/2024', mes: 'May', comision: 275.00, precio_venta: 1500.00, total_entrada: 1775.00 },
-    { date: '05/15/2024', mes: 'May', comision: 160.00, precio_venta: 900.00, total_entrada: 1060.00 },
-    { date: '05/18/2024', mes: 'May', comision: 420.75, precio_venta: 2200.00, total_entrada: 2620.75 },
-    { date: '05/20/2024', mes: 'May', comision: 185.25, precio_venta: 1050.00, total_entrada: 1235.25 },
-    { date: '05/22/2024', mes: 'May', comision: 250.00, precio_venta: 1400.00, total_entrada: 1650.00 },
-    { date: '05/25/2024', mes: 'May', comision: 310.50, precio_venta: 1700.00, total_entrada: 2010.50 },
-    { date: '05/28/2024', mes: 'May', comision: 130.00, precio_venta: 750.00, total_entrada: 880.00 },
-    { date: '04/15/2024', mes: 'Abr', comision: 200.00, precio_venta: 1100.00, total_entrada: 1300.00 },
-    { date: '04/20/2024', mes: 'Abr', comision: 150.00, precio_venta: 850.00, total_entrada: 1000.00 }
+// 1. En AppSheet, agrega esta tabla como referencia:
+//    - Tabla: detalleorden
+//    - Columnas esperadas: date, comision, precio_venta, total_entrada
+//
+// 2. Para pasar datos desde AppSheet al componente:
+//    a) Opción A - Desde una acción personalizada:
+//       window.actualizarDatos(datosArray, gastosFijosObj);
+//
+//    b) Opción B - Inyectar datos en la carga:
+//       Reemplaza los datos de prueba abajo con tus datos reales
+//
+// ============================================
+
+// DATOS DE PRUEBA - Reemplazar con datos de AppSheet
+let datosGlobales = [
+    // MAYO 2024
+    { date: '05/01/2024', comision: 150.00, precio_venta: 800.00, total_entrada: 950.00 },
+    { date: '05/01/2024', comision: 75.50, precio_venta: 420.00, total_entrada: 495.50 },
+    { date: '05/03/2024', comision: 220.00, precio_venta: 1200.00, total_entrada: 1420.00 },
+    { date: '05/05/2024', comision: 110.25, precio_venta: 650.00, total_entrada: 760.25 },
+    { date: '05/05/2024', comision: 89.75, precio_venta: 550.00, total_entrada: 639.75 },
+    { date: '05/08/2024', comision: 340.00, precio_venta: 1800.00, total_entrada: 2140.00 },
+    { date: '05/10/2024', comision: 95.50, precio_venta: 520.00, total_entrada: 615.50 },
+    { date: '05/12/2024', comision: 275.00, precio_venta: 1500.00, total_entrada: 1775.00 },
+    { date: '05/15/2024', comision: 160.00, precio_venta: 900.00, total_entrada: 1060.00 },
+    { date: '05/18/2024', comision: 420.75, precio_venta: 2200.00, total_entrada: 2620.75 },
+    { date: '05/20/2024', comision: 185.25, precio_venta: 1050.00, total_entrada: 1235.25 },
+    { date: '05/22/2024', comision: 250.00, precio_venta: 1400.00, total_entrada: 1650.00 },
+    { date: '05/25/2024', comision: 310.50, precio_venta: 1700.00, total_entrada: 2010.50 },
+    { date: '05/28/2024', comision: 130.00, precio_venta: 750.00, total_entrada: 880.00 },
+    
+    // ABRIL 2024
+    { date: '04/15/2024', comision: 200.00, precio_venta: 1100.00, total_entrada: 1300.00 },
+    { date: '04/20/2024', comision: 150.00, precio_venta: 850.00, total_entrada: 1000.00 },
+    
+    // JUNIO 2024
+    { date: '06/05/2024', comision: 180.00, precio_venta: 950.00, total_entrada: 1130.00 },
+    { date: '06/10/2024', comision: 250.00, precio_venta: 1350.00, total_entrada: 1600.00 },
+    { date: '06/15/2024', comision: 300.00, precio_venta: 1600.00, total_entrada: 1900.00 },
+    { date: '06/20/2024', comision: 220.00, precio_venta: 1200.00, total_entrada: 1420.00 }
 ];
 
-// Costos Fijos por mes - REEMPLAZA CON TUS VALORES
-const gastosFijos = {
-    'Ene': 5000, 'Feb': 5000, 'Mar': 5000, 'Abr': 5000, 'May': 5000,
-    'Jun': 5000, 'Jul': 5000, 'Ago': 5000, 'Sep': 5000, 'Oct': 5000,
-    'Nov': 5000, 'Dic': 5000
+// GASTOS FIJOS POR MES - REEMPLAZAR CON VALORES REALES
+let gastosFijosGlobal = {
+    '01': 5000, '02': 5000, '03': 5000, '04': 5000, '05': 5000,
+    '06': 5000, '07': 5000, '08': 5000, '09': 5000, '10': 5000,
+    '11': 5000, '12': 5000
 };
 
 let chart = null;
 
+// Función para actualizar datos desde AppSheet
+window.actualizarDatos = function(datos, gastosFijos) {
+    datosGlobales = datos;
+    gastosFijosGlobal = gastosFijos;
+    actualizarGrafico();
+};
+
 function actualizarGrafico() {
-    const mesSeleccionado = document.getElementById('mesSelect').value;
+    const ano = document.getElementById('anoSelect').value;
+    const mes = document.getElementById('mesSelect').value;
     
-    const datosFiltrados = datosDetalleOrden.filter(item => item.mes === mesSeleccionado);
+    // Filtrar datos por año y mes (formato: mm/dd/yyyy)
+    const datosFiltrados = datosGlobales.filter(item => {
+        const partes = item.date.split('/');
+        const itemMes = partes[0];
+        const itemAno = partes[2];
+        return itemMes === mes && itemAno === ano;
+    });
     
+    // Mostrar mensaje si no hay datos
+    const sinDatosDiv = document.getElementById('sinDatos');
+    if (datosFiltrados.length === 0) {
+        sinDatosDiv.style.display = 'block';
+        if (chart) chart.destroy();
+        document.getElementById('totalVenta').textContent = '$0.00';
+        document.getElementById('totalCostos').textContent = '$0.00';
+        document.getElementById('gananciaNeta').textContent = '$0.00';
+        document.getElementById('margenPorcentaje').textContent = '0%';
+        document.getElementById('puntoEquilibrioInfo').style.display = 'none';
+        return;
+    } else {
+        sinDatosDiv.style.display = 'none';
+    }
+    
+    // Agrupar por día
     const datosPorDia = {};
     datosFiltrados.forEach(item => {
         const partes = item.date.split('/');
@@ -222,8 +297,10 @@ function actualizarGrafico() {
     
     const dias = Object.keys(datosPorDia).map(Number).sort((a, b) => a - b);
     
+    // Calcular acumulados
     let acumVenta = 0, acumCostosVar = 0, acumComisiones = 0;
     const ventasAcum = [], costosVarAcum = [], comisionesAcum = [], costosTotalesAcum = [];
+    const costosFijos = gastosFijosGlobal[mes] || 5000;
     
     dias.forEach(dia => {
         acumVenta += datosPorDia[dia].total_entrada;
@@ -233,14 +310,14 @@ function actualizarGrafico() {
         ventasAcum.push(Math.round(acumVenta * 100) / 100);
         costosVarAcum.push(Math.round(acumCostosVar * 100) / 100);
         comisionesAcum.push(Math.round(acumComisiones * 100) / 100);
-        costosTotalesAcum.push(Math.round((acumCostosVar + gastosFijos[mesSeleccionado]) * 100) / 100);
+        costosTotalesAcum.push(Math.round((acumCostosVar + costosFijos) * 100) / 100);
     });
     
     // Encontrar punto de equilibrio
     let puntoEquilibrio = null;
     for (let i = 0; i < ventasAcum.length; i++) {
         if (ventasAcum[i] >= costosTotalesAcum[i]) {
-            puntoEquilibrio = { dia: dias[i], monto: ventasAcum[i], indice: i };
+            puntoEquilibrio = { dia: dias[i], monto: ventasAcum[i] };
             break;
         }
     }
@@ -330,7 +407,7 @@ function actualizarGrafico() {
                 },
                 {
                     label: 'Costos Fijos',
-                    data: Array(dias.length).fill(gastosFijos[mesSeleccionado]),
+                    data: Array(dias.length).fill(costosFijos),
                     borderColor: '#5F5E5A',
                     backgroundColor: 'rgba(95, 94, 90, 0.06)',
                     borderWidth: 2,
@@ -389,6 +466,7 @@ function actualizarGrafico() {
     });
 }
 
+document.getElementById('anoSelect').addEventListener('change', actualizarGrafico);
 document.getElementById('mesSelect').addEventListener('change', actualizarGrafico);
 actualizarGrafico();
 </script>
