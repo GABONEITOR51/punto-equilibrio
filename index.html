@@ -3,50 +3,395 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Punto de Equilibrio</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <title>Análisis Financiero AppSheet</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #333; }
-        .chart-container { position: relative; height: 400px; margin: 30px 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .header label {
+            font-weight: 500;
+            color: #333;
+        }
+        .header select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .metric-card {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #eee;
+        }
+        .metric-card label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .metric-card .value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        .equilibrio-info {
+            background: linear-gradient(135deg, rgba(15, 110, 86, 0.1) 0%, rgba(226, 75, 74, 0.1) 100%);
+            border-left: 4px solid #0F6E56;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: none;
+        }
+        .equilibrio-info h3 {
+            font-size: 12px;
+            color: #999;
+            margin: 0 0 4px;
+            font-weight: 500;
+        }
+        .equilibrio-info p {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        .equilibrio-info small {
+            font-size: 11px;
+            color: #999;
+            display: block;
+            margin-top: 4px;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 24px;
+        }
+        .legend {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 12px;
+            line-height: 1.8;
+            color: #666;
+        }
+        .legend p {
+            margin: 4px 0;
+        }
+        .legend strong {
+            color: #333;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📊 Punto de Equilibrio</h1>
-        <div class="chart-container">
-            <canvas id="myChart"></canvas>
+
+<div class="container">
+    <div class="header">
+        <label for="mesSelect">Mes:</label>
+        <select id="mesSelect">
+            <option value="Ene">Enero</option>
+            <option value="Feb">Febrero</option>
+            <option value="Mar">Marzo</option>
+            <option value="Abr">Abril</option>
+            <option value="May" selected>Mayo</option>
+            <option value="Jun">Junio</option>
+            <option value="Jul">Julio</option>
+            <option value="Ago">Agosto</option>
+            <option value="Sep">Septiembre</option>
+            <option value="Oct">Octubre</option>
+            <option value="Nov">Noviembre</option>
+            <option value="Dic">Diciembre</option>
+        </select>
+    </div>
+
+    <div id="puntoEquilibrioInfo" class="equilibrio-info">
+        <h3>📍 Punto de Equilibrio</h3>
+        <p>Día <span id="diaEquilibrio">--</span></p>
+        <small>Ingresos = Costos Totales en <span id="montoEquilibrio">$0.00</span></small>
+    </div>
+
+    <div class="metrics">
+        <div class="metric-card">
+            <label>Venta Total</label>
+            <div class="value" style="color: #0F6E56;" id="totalVenta">$0.00</div>
+        </div>
+        <div class="metric-card">
+            <label>Total Costos</label>
+            <div class="value" style="color: #853D0B;" id="totalCostos">$0.00</div>
+        </div>
+        <div class="metric-card">
+            <label>Ganancia Neta</label>
+            <div class="value" id="gananciaNeta" style="color: #0F6E56;">$0.00</div>
+        </div>
+        <div class="metric-card">
+            <label>Margen %</label>
+            <div class="value" id="margenPorcentaje" style="color: #0F6E56;">0%</div>
         </div>
     </div>
-    <script>
-        const ctx = document.getElementById('myChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo'],
-                datasets: [{
-                    label: 'Comisiones',
-                    data: [15000, 16500, 14800, 18200, 17038],
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+
+    <div class="chart-container">
+        <canvas id="analisisChart"></canvas>
+    </div>
+
+    <div class="legend">
+        <p><strong style="color: #0F6E56;">●</strong> Verde: Ingresos acumulados del mes</p>
+        <p><strong style="color: #853D0B;">●</strong> Marrón: Total de costos (variables + fijos)</p>
+        <p><strong style="color: #BA7517;">●</strong> Naranja: Solo costos variables</p>
+        <p><strong style="color: #E24B4A;">●</strong> Rojo: Comisiones</p>
+        <p><strong style="color: #5F5E5A;">●</strong> Gris punteado: Costos fijos</p>
+    </div>
+</div>
+
+<script>
+// ============================================
+// DATOS DE PRUEBA - REEMPLAZA CON TUS DATOS
+// ============================================
+const datosDetalleOrden = [
+    { date: '05/01/2024', mes: 'May', comision: 150.00, precio_venta: 800.00, total_entrada: 950.00 },
+    { date: '05/01/2024', mes: 'May', comision: 75.50, precio_venta: 420.00, total_entrada: 495.50 },
+    { date: '05/03/2024', mes: 'May', comision: 220.00, precio_venta: 1200.00, total_entrada: 1420.00 },
+    { date: '05/05/2024', mes: 'May', comision: 110.25, precio_venta: 650.00, total_entrada: 760.25 },
+    { date: '05/05/2024', mes: 'May', comision: 89.75, precio_venta: 550.00, total_entrada: 639.75 },
+    { date: '05/08/2024', mes: 'May', comision: 340.00, precio_venta: 1800.00, total_entrada: 2140.00 },
+    { date: '05/10/2024', mes: 'May', comision: 95.50, precio_venta: 520.00, total_entrada: 615.50 },
+    { date: '05/12/2024', mes: 'May', comision: 275.00, precio_venta: 1500.00, total_entrada: 1775.00 },
+    { date: '05/15/2024', mes: 'May', comision: 160.00, precio_venta: 900.00, total_entrada: 1060.00 },
+    { date: '05/18/2024', mes: 'May', comision: 420.75, precio_venta: 2200.00, total_entrada: 2620.75 },
+    { date: '05/20/2024', mes: 'May', comision: 185.25, precio_venta: 1050.00, total_entrada: 1235.25 },
+    { date: '05/22/2024', mes: 'May', comision: 250.00, precio_venta: 1400.00, total_entrada: 1650.00 },
+    { date: '05/25/2024', mes: 'May', comision: 310.50, precio_venta: 1700.00, total_entrada: 2010.50 },
+    { date: '05/28/2024', mes: 'May', comision: 130.00, precio_venta: 750.00, total_entrada: 880.00 },
+    { date: '04/15/2024', mes: 'Abr', comision: 200.00, precio_venta: 1100.00, total_entrada: 1300.00 },
+    { date: '04/20/2024', mes: 'Abr', comision: 150.00, precio_venta: 850.00, total_entrada: 1000.00 }
+];
+
+// Costos Fijos por mes - REEMPLAZA CON TUS VALORES
+const gastosFijos = {
+    'Ene': 5000, 'Feb': 5000, 'Mar': 5000, 'Abr': 5000, 'May': 5000,
+    'Jun': 5000, 'Jul': 5000, 'Ago': 5000, 'Sep': 5000, 'Oct': 5000,
+    'Nov': 5000, 'Dic': 5000
+};
+
+let chart = null;
+
+function actualizarGrafico() {
+    const mesSeleccionado = document.getElementById('mesSelect').value;
+    
+    const datosFiltrados = datosDetalleOrden.filter(item => item.mes === mesSeleccionado);
+    
+    const datosPorDia = {};
+    datosFiltrados.forEach(item => {
+        const partes = item.date.split('/');
+        const dia = parseInt(partes[1]);
+        
+        if (!datosPorDia[dia]) {
+            datosPorDia[dia] = { comision: 0, precio_venta: 0, total_entrada: 0 };
+        }
+        datosPorDia[dia].comision += item.comision;
+        datosPorDia[dia].precio_venta += item.precio_venta;
+        datosPorDia[dia].total_entrada += item.total_entrada;
+    });
+    
+    const dias = Object.keys(datosPorDia).map(Number).sort((a, b) => a - b);
+    
+    let acumVenta = 0, acumCostosVar = 0, acumComisiones = 0;
+    const ventasAcum = [], costosVarAcum = [], comisionesAcum = [], costosTotalesAcum = [];
+    
+    dias.forEach(dia => {
+        acumVenta += datosPorDia[dia].total_entrada;
+        acumCostosVar += datosPorDia[dia].precio_venta;
+        acumComisiones += datosPorDia[dia].comision;
+        
+        ventasAcum.push(Math.round(acumVenta * 100) / 100);
+        costosVarAcum.push(Math.round(acumCostosVar * 100) / 100);
+        comisionesAcum.push(Math.round(acumComisiones * 100) / 100);
+        costosTotalesAcum.push(Math.round((acumCostosVar + gastosFijos[mesSeleccionado]) * 100) / 100);
+    });
+    
+    // Encontrar punto de equilibrio
+    let puntoEquilibrio = null;
+    for (let i = 0; i < ventasAcum.length; i++) {
+        if (ventasAcum[i] >= costosTotalesAcum[i]) {
+            puntoEquilibrio = { dia: dias[i], monto: ventasAcum[i], indice: i };
+            break;
+        }
+    }
+    
+    const infoDiv = document.getElementById('puntoEquilibrioInfo');
+    if (puntoEquilibrio) {
+        infoDiv.style.display = 'block';
+        document.getElementById('diaEquilibrio').textContent = puntoEquilibrio.dia;
+        document.getElementById('montoEquilibrio').textContent = '$' + puntoEquilibrio.monto.toLocaleString('en-US', {minimumFractionDigits: 2});
+    } else {
+        infoDiv.style.display = 'none';
+    }
+    
+    const totalVenta = ventasAcum[ventasAcum.length - 1] || 0;
+    const totalCostos = costosTotalesAcum[costosTotalesAcum.length - 1] || 0;
+    const gananciaNeta = totalVenta - totalCostos;
+    const margen = totalVenta > 0 ? Math.round((gananciaNeta / totalVenta) * 100) : 0;
+    
+    document.getElementById('totalVenta').textContent = '$' + totalVenta.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('totalCostos').textContent = '$' + totalCostos.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('gananciaNeta').textContent = '$' + gananciaNeta.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('gananciaNeta').style.color = gananciaNeta >= 0 ? '#0F6E56' : '#E24B4A';
+    document.getElementById('margenPorcentaje').textContent = margen + '%';
+    document.getElementById('margenPorcentaje').style.color = margen >= 0 ? '#0F6E56' : '#E24B4A';
+    
+    if (chart) {
+        chart.destroy();
+    }
+    
+    const ctx = document.getElementById('analisisChart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dias.map(d => 'Día ' + d),
+            datasets: [
+                {
+                    label: 'Venta Total (acum)',
+                    data: ventasAcum,
+                    borderColor: '#0F6E56',
+                    backgroundColor: 'rgba(15, 110, 86, 0.06)',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#0F6E56',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    label: 'Total Costos (acum)',
+                    data: costosTotalesAcum,
+                    borderColor: '#853D0B',
+                    backgroundColor: 'rgba(133, 61, 11, 0.06)',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#853D0B',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    label: 'Costos Variables (acum)',
+                    data: costosVarAcum,
+                    borderColor: '#BA7517',
+                    backgroundColor: 'rgba(186, 117, 23, 0.06)',
                     borderWidth: 2,
-                    tension: 0.4
-                }, {
-                    label: 'Gastos Fijos',
-                    data: [7200, 7200, 7200, 7200, 7200],
-                    borderColor: '#eb3349',
+                    pointRadius: 3,
+                    pointBackgroundColor: '#BA7517',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    label: 'Comisiones (acum)',
+                    data: comisionesAcum,
+                    borderColor: '#E24B4A',
+                    backgroundColor: 'rgba(226, 75, 74, 0.06)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#E24B4A',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    tension: 0.3,
+                    fill: false
+                },
+                {
+                    label: 'Costos Fijos',
+                    data: Array(dias.length).fill(gastosFijos[mesSeleccionado]),
+                    borderColor: '#5F5E5A',
+                    backgroundColor: 'rgba(95, 94, 90, 0.06)',
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    pointBackgroundColor: '#5F5E5A',
                     borderDash: [5, 5],
-                    borderWidth: 2
-                }]
+                    tension: 0.3,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: { size: 12 },
+                        color: '#333',
+                        padding: 12,
+                        usePointStyle: true
+                    }
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: true } },
-                scales: { y: { beginAtZero: true } }
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        },
+                        font: { size: 11 }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: { size: 11 }
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
-        });
-    </script>
+        }
+    });
+}
+
+document.getElementById('mesSelect').addEventListener('change', actualizarGrafico);
+actualizarGrafico();
+</script>
+
 </body>
 </html>
