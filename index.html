@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análisis Financiero - Punto de Equilibrio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -40,6 +39,7 @@
             color: #999;
             margin: 0;
         }
+        
         .metrics {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -64,34 +64,24 @@
             color: #333;
         }
         
-        .equilibrio-card {
-            background: linear-gradient(135deg, rgba(79, 195, 247, 0.1) 0%, rgba(66, 165, 245, 0.1) 100%);
-            border: 2px solid #42a5f5;
-            border-radius: 8px;
-            padding: 20px;
+        .equilibrio-alert {
+            background: linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(41, 128, 185, 0.1) 100%);
+            border-left: 4px solid #2196F3;
+            border-radius: 6px;
+            padding: 16px;
             margin-bottom: 24px;
-            text-align: center;
+            display: none;
         }
-        .equilibrio-card h3 {
+        .equilibrio-alert h3 {
             font-size: 14px;
             color: #1976d2;
             margin-bottom: 8px;
             font-weight: 600;
         }
-        .equilibrio-card .punto-dia {
-            font-size: 32px;
-            font-weight: 700;
+        .equilibrio-alert .info {
+            font-size: 13px;
             color: #1565c0;
-            margin-bottom: 4px;
-        }
-        .equilibrio-card .punto-monto {
-            font-size: 18px;
-            color: #1976d2;
-            margin-bottom: 8px;
-        }
-        .equilibrio-card .punto-desc {
-            font-size: 12px;
-            color: #666;
+            margin: 4px 0;
         }
 
         .chart-wrapper {
@@ -104,28 +94,37 @@
         
         .chart-container {
             position: relative;
-            height: 450px;
+            height: 500px;
             margin-bottom: 16px;
         }
 
-        .zone-labels {
-            display: flex;
-            gap: 24px;
+        .zona-labels {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
             margin-bottom: 16px;
+        }
+
+        .zona-box {
+            padding: 12px;
+            border-radius: 6px;
             font-size: 12px;
-        }
-        .zone-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .zone-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
+            font-weight: 600;
         }
 
-        .legend {
+        .zona-perdida {
+            background: rgba(255, 112, 67, 0.2);
+            border: 1px solid #FF7043;
+            color: #d84315;
+        }
+
+        .zona-ganancia {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #2e7d32;
+        }
+
+        .legend-custom {
             background: #f9f9f9;
             border-radius: 8px;
             padding: 16px;
@@ -133,11 +132,20 @@
             line-height: 1.8;
             color: #666;
         }
-        .legend p {
-            margin: 4px 0;
+        .legend-custom p {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .legend strong {
+        .legend-custom strong {
             color: #333;
+        }
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            flex-shrink: 0;
         }
 
         .sin-datos {
@@ -169,7 +177,7 @@
     <!-- TÍTULO DINÁMICO -->
     <div class="titulo-dinamico">
         <h1 id="tituloMes">Análisis Financiero - Mayo 2025</h1>
-        <p id="subtituloMes">Visualización del punto de equilibrio</p>
+        <p id="subtituloMes">Punto de equilibrio entre ingresos y costos</p>
     </div>
 
     <div class="info-box" id="infoBox">
@@ -180,43 +188,44 @@
         ⚠️ No hay datos disponibles para el período seleccionado
     </div>
 
-    <!-- TARJETA DE PUNTO DE EQUILIBRIO -->
-    <div class="equilibrio-card" id="equilibrioCard" style="display:none;">
-        <h3>🎯 PUNTO DE EQUILIBRIO ALCANZADO</h3>
-        <div class="punto-dia" id="diaEquilibrio">--</div>
-        <div class="punto-monto" id="montoEquilibrio">$0.00</div>
-        <div class="punto-desc">En este momento, tus ingresos igualan tus costos totales</div>
+    <!-- ALERTA DE PUNTO DE EQUILIBRIO -->
+    <div class="equilibrio-alert" id="equilibrioAlert">
+        <h3>🎯 PUNTO DE EQUILIBRIO</h3>
+        <div class="info">Día: <strong id="diaEquilibrio">--</strong></div>
+        <div class="info">Monto: <strong id="montoEquilibrio">$0.00</strong></div>
+        <div class="info" style="font-size: 12px; margin-top: 8px; color: #999;">
+            A partir de este día, los ingresos superan los costos totales
+        </div>
     </div>
 
+    <!-- MÉTRICAS PRINCIPALES -->
     <div class="metrics">
         <div class="metric-card">
             <label>Ingresos Totales</label>
-            <div class="value" style="color: #0F6E56;" id="totalVenta">$0.00</div>
+            <div class="value" style="color: #4CAF50;" id="totalVenta">$0.00</div>
         </div>
         <div class="metric-card">
-            <label>Total Costos</label>
-            <div class="value" style="color: #853D0B;" id="totalCostos">$0.00</div>
+            <label>Costos Totales</label>
+            <div class="value" style="color: #FF7043;" id="totalCostos">$0.00</div>
         </div>
         <div class="metric-card">
-            <label>Ganancia Neta</label>
-            <div class="value" id="gananciaNeta" style="color: #0F6E56;">$0.00</div>
+            <label>Ganancia/Pérdida</label>
+            <div class="value" id="gananciaNeta" style="color: #4CAF50;">$0.00</div>
         </div>
         <div class="metric-card">
             <label>Margen %</label>
-            <div class="value" id="margenPorcentaje" style="color: #0F6E56;">0%</div>
+            <div class="value" id="margenPorcentaje" style="color: #4CAF50;">0%</div>
         </div>
     </div>
 
-    <!-- GRÁFICO CON ZONAS -->
+    <!-- GRÁFICO -->
     <div class="chart-wrapper">
-        <div class="zone-labels">
-            <div class="zone-label">
-                <div class="zone-color" style="background: rgba(239, 108, 77, 0.2); border: 1px solid #ef6c4d;"></div>
-                <span><strong>ZONA DE PÉRDIDA</strong> - Costos > Ingresos</span>
+        <div class="zona-labels">
+            <div class="zona-box zona-perdida">
+                🔴 ZONA DE PÉRDIDA - Costos > Ingresos
             </div>
-            <div class="zone-label">
-                <div class="zone-color" style="background: rgba(76, 175, 80, 0.2); border: 1px solid #4caf50;"></div>
-                <span><strong>ZONA DE GANANCIA</strong> - Ingresos > Costos</span>
+            <div class="zona-box zona-ganancia">
+                🟢 ZONA DE GANANCIA - Ingresos > Costos
             </div>
         </div>
 
@@ -225,12 +234,32 @@
         </div>
     </div>
 
-    <div class="legend">
-        <p><strong style="color: #0F6E56;">●</strong> Verde: Ingresos acumulados del mes</p>
-        <p><strong style="color: #853D0B;">●</strong> Marrón: Total de costos (variables + fijos)</p>
-        <p><strong style="color: #BA7517;">●</strong> Naranja: Solo costos variables</p>
-        <p><strong style="color: #E24B4A;">●</strong> Rojo: Comisiones</p>
-        <p><strong style="color: #5F5E5A;">●</strong> Gris punteado: Costos fijos</p>
+    <!-- LEYENDA -->
+    <div class="legend-custom">
+        <p>
+            <div class="legend-dot" style="background: #4CAF50;"></div>
+            <strong style="color: #2e7d32;">Línea de Ingresos</strong> - Ingresos acumulados diarios
+        </p>
+        <p>
+            <div class="legend-dot" style="background: #FF7043;"></div>
+            <strong style="color: #d84315;">Línea de Costos Totales</strong> - Suma de costos variables y fijos
+        </p>
+        <p>
+            <div class="legend-dot" style="background: #FFC107;"></div>
+            <strong style="color: #f57f17;">Línea de Costos Variables</strong> - Costos que varían con ventas
+        </p>
+        <p>
+            <div class="legend-dot" style="background: #9C27B0;"></div>
+            <strong style="color: #6a1b9a;">Línea de Costos Fijos</strong> - Gastos constantes del mes
+        </p>
+        <p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
+            <div class="legend-dot" style="background: rgba(76, 175, 80, 0.3); border: 1px solid #4CAF50;"></div>
+            <strong style="color: #2e7d32;">Área de Ganancia</strong>
+        </p>
+        <p>
+            <div class="legend-dot" style="background: rgba(255, 112, 67, 0.3); border: 1px solid #FF7043;"></div>
+            <strong style="color: #d84315;">Área de Pérdida</strong>
+        </p>
     </div>
 </div>
 
@@ -258,9 +287,6 @@ const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 function crearDatosSimulados() {
-    const mesNum = parseInt(parametrosActuales.mes);
-    const anoNum = parseInt(parametrosActuales.ano);
-    
     const datos = [];
     const diasTrabajo = [1, 3, 5, 8, 10, 12, 15, 18, 20, 22, 25, 28];
     
@@ -286,11 +312,9 @@ function actualizarGrafico() {
     // Actualizar título
     const mesNum = parseInt(mes);
     document.getElementById('tituloMes').textContent = `${meses[mesNum]} ${ano}`;
-    document.getElementById('subtituloMes').textContent = `Análisis financiero del mes`;
     
     // Mostrar info si vienen parámetros
-    const hayParametros = window.location.search.length > 0;
-    if (hayParametros) {
+    if (window.location.search.length > 0) {
         document.getElementById('infoBox').style.display = 'block';
     }
     
@@ -307,11 +331,8 @@ function actualizarGrafico() {
     if (datosFiltrados.length === 0 || parametrosActuales.ingresos === 0) {
         sinDatosDiv.style.display = 'block';
         if (chart) chart.destroy();
-        document.getElementById('totalVenta').textContent = '$0.00';
-        document.getElementById('totalCostos').textContent = '$0.00';
-        document.getElementById('gananciaNeta').textContent = '$0.00';
-        document.getElementById('margenPorcentaje').textContent = '0%';
-        document.getElementById('equilibrioCard').style.display = 'none';
+        resetearMetricas();
+        document.getElementById('equilibrioAlert').style.display = 'none';
         return;
     } else {
         sinDatosDiv.style.display = 'none';
@@ -334,18 +355,16 @@ function actualizarGrafico() {
     const dias = Object.keys(datosPorDia).map(Number).sort((a, b) => a - b);
     
     // Calcular acumulados
-    let acumVenta = 0, acumCostosVar = 0, acumComisiones = 0;
-    const ventasAcum = [], costosVarAcum = [], comisionesAcum = [], costosTotalesAcum = [];
+    let acumVenta = 0, acumCostosVar = 0;
+    const ventasAcum = [], costosVarAcum = [], costosTotalesAcum = [];
     const costosFijos = parametrosActuales.gastosFijos;
     
     dias.forEach(dia => {
         acumVenta += datosPorDia[dia].total_entrada || 0;
         acumCostosVar += datosPorDia[dia].precio_venta || 0;
-        acumComisiones += datosPorDia[dia].comision || 0;
         
         ventasAcum.push(Math.round(acumVenta * 100) / 100);
         costosVarAcum.push(Math.round(acumCostosVar * 100) / 100);
-        comisionesAcum.push(Math.round(acumComisiones * 100) / 100);
         costosTotalesAcum.push(Math.round((acumCostosVar + costosFijos) * 100) / 100);
     });
     
@@ -360,16 +379,17 @@ function actualizarGrafico() {
         }
     }
     
-    // Mostrar tarjeta de equilibrio
-    const equilibrioCard = document.getElementById('equilibrioCard');
+    // Mostrar alerta de equilibrio
+    const equilibrioAlert = document.getElementById('equilibrioAlert');
     if (puntoEquilibrio) {
-        equilibrioCard.style.display = 'block';
-        document.getElementById('diaEquilibrio').textContent = `Día ${puntoEquilibrio.dia}`;
+        equilibrioAlert.style.display = 'block';
+        document.getElementById('diaEquilibrio').textContent = puntoEquilibrio.dia;
         document.getElementById('montoEquilibrio').textContent = '$' + puntoEquilibrio.monto.toLocaleString('es-ES', {minimumFractionDigits: 2});
     } else {
-        equilibrioCard.style.display = 'none';
+        equilibrioAlert.style.display = 'none';
     }
     
+    // Actualizar métricas
     const totalVenta = ventasAcum[ventasAcum.length - 1] || 0;
     const totalCostos = costosTotalesAcum[costosTotalesAcum.length - 1] || 0;
     const gananciaNeta = totalVenta - totalCostos;
@@ -378,73 +398,109 @@ function actualizarGrafico() {
     document.getElementById('totalVenta').textContent = '$' + totalVenta.toLocaleString('es-ES', {minimumFractionDigits: 2});
     document.getElementById('totalCostos').textContent = '$' + totalCostos.toLocaleString('es-ES', {minimumFractionDigits: 2});
     document.getElementById('gananciaNeta').textContent = '$' + gananciaNeta.toLocaleString('es-ES', {minimumFractionDigits: 2});
-    document.getElementById('gananciaNeta').style.color = gananciaNeta >= 0 ? '#0F6E56' : '#E24B4A';
+    document.getElementById('gananciaNeta').style.color = gananciaNeta >= 0 ? '#4CAF50' : '#FF7043';
     document.getElementById('margenPorcentaje').textContent = margen + '%';
-    document.getElementById('margenPorcentaje').style.color = margen >= 0 ? '#0F6E56' : '#E24B4A';
+    document.getElementById('margenPorcentaje').style.color = margen >= 0 ? '#4CAF50' : '#FF7043';
     
     if (chart) {
         chart.destroy();
     }
     
-    // Crear datos para el gráfico de áreas de ganancia/pérdida
-    const gananciaPerdida = ventasAcum.map((venta, i) => venta - costosTotalesAcum[i]);
-    
+    dibujarGrafico(dias, ventasAcum, costosTotalesAcum, costosVarAcum, costosFijos, puntoEquilibrio, indexEquilibrio);
+}
+
+function resetearMetricas() {
+    document.getElementById('totalVenta').textContent = '$0.00';
+    document.getElementById('totalCostos').textContent = '$0.00';
+    document.getElementById('gananciaNeta').textContent = '$0.00';
+    document.getElementById('margenPorcentaje').textContent = '0%';
+}
+
+function dibujarGrafico(dias, ventasAcum, costosTotalesAcum, costosVarAcum, costosFijos, puntoEquilibrio, indexEquilibrio) {
     const ctx = document.getElementById('analisisChart').getContext('2d');
+    
     chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: dias.map(d => 'Día ' + d),
             datasets: [
                 {
-                    label: 'Ingresos Acumulados',
+                    label: 'Ingresos',
                     data: ventasAcum,
-                    borderColor: '#0F6E56',
-                    backgroundColor: 'rgba(15, 110, 86, 0.08)',
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
                     borderWidth: 3,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: '#0F6E56',
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#4CAF50',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
-                    tension: 0.3,
-                    fill: true,
-                    segment: {
-                        borderColor: ctx => {
-                            if (ctx.p0DataIndex !== undefined) {
-                                const valor = ventasAcum[ctx.p0DataIndex];
-                                const costo = costosTotalesAcum[ctx.p0DataIndex];
-                                return valor >= costo ? '#4caf50' : '#ef6c4d';
-                            }
-                            return '#0F6E56';
-                        }
-                    }
+                    tension: 0.2,
+                    fill: false,
+                    zeroLineColor: 'transparent'
                 },
                 {
-                    label: 'Total Costos (Acumulado)',
+                    label: 'Costos Totales',
                     data: costosTotalesAcum,
-                    borderColor: '#853D0B',
-                    backgroundColor: 'rgba(133, 61, 11, 0.08)',
+                    borderColor: '#FF7043',
+                    backgroundColor: 'rgba(255, 112, 67, 0.1)',
                     borderWidth: 3,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: '#853D0B',
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#FF7043',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
-                    tension: 0.3,
+                    tension: 0.2,
                     fill: false
                 },
                 {
-                    label: 'Zona de Ganancia/Pérdida',
-                    data: gananciaPerdida,
+                    label: 'Costos Variables',
+                    data: costosVarAcum,
+                    borderColor: '#FFC107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.05)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#FFC107',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    tension: 0.2,
+                    fill: false,
+                    borderDash: [3, 3]
+                },
+                {
+                    label: 'Costos Fijos',
+                    data: Array(dias.length).fill(costosFijos),
+                    borderColor: '#9C27B0',
+                    backgroundColor: 'rgba(156, 39, 176, 0.05)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.2,
+                    fill: false,
+                    borderDash: [5, 5]
+                },
+                // Área de ganancia
+                {
+                    label: 'Área de Ganancia',
+                    data: ventasAcum.map((v, i) => Math.max(0, v - costosTotalesAcum[i])),
+                    backgroundColor: 'rgba(76, 175, 80, 0.25)',
                     borderColor: 'transparent',
-                    backgroundColor: gananciaPerdida.map((val, i) => {
-                        return val >= 0 ? 'rgba(76, 175, 80, 0.15)' : 'rgba(239, 108, 77, 0.15)';
-                    }),
                     borderWidth: 0,
                     pointRadius: 0,
-                    tension: 0.3,
                     fill: true,
-                    yAxisID: 'y1'
+                    tension: 0.2,
+                    yAxisID: 'y',
+                },
+                // Área de pérdida
+                {
+                    label: 'Área de Pérdida',
+                    data: costosTotalesAcum.map((c, i) => Math.max(0, c - ventasAcum[i])),
+                    backgroundColor: 'rgba(255, 112, 67, 0.25)',
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    pointRadius: 0,
+                    fill: true,
+                    tension: 0.2,
+                    yAxisID: 'y',
                 }
             ]
         },
@@ -456,29 +512,30 @@ function actualizarGrafico() {
                     display: true,
                     position: 'top',
                     labels: {
-                        font: { size: 12 },
+                        font: { size: 12, weight: 'bold' },
                         color: '#333',
-                        padding: 12,
+                        padding: 15,
                         usePointStyle: true,
                         filter: function(item) {
-                            return item.text !== 'Zona de Ganancia/Pérdida';
+                            return !item.text.includes('Área');
                         }
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
+                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                    padding: 14,
                     titleFont: { size: 13, weight: 'bold' },
                     bodyFont: { size: 12 },
+                    borderColor: '#fff',
+                    borderWidth: 1,
+                    displayColors: true,
                     callbacks: {
-                        afterBody: function(context) {
-                            if (context[0]) {
-                                const idx = context[0].dataIndex;
-                                const venta = ventasAcum[idx];
-                                const costo = costosTotalesAcum[idx];
-                                const diff = venta - costo;
-                                const estado = diff >= 0 ? '✓ GANANCIA' : '✗ PÉRDIDA';
-                                return [`\n${estado}: $${Math.abs(diff).toLocaleString('es-ES', {minimumFractionDigits: 2})}`];
+                        footer: function(context) {
+                            if (context.length >= 2) {
+                                const ingresos = context[0].parsed.y;
+                                const costos = context[1].parsed.y;
+                                const diferencia = ingresos - costos;
+                                return `\nDiferencia: $${diferencia.toLocaleString('es-ES', {minimumFractionDigits: 2})}`;
                             }
                         }
                     }
@@ -494,36 +551,33 @@ function actualizarGrafico() {
                         callback: function(value) {
                             return '$' + value.toFixed(0);
                         },
-                        font: { size: 11 }
+                        font: { size: 11 },
+                        color: '#666'
                     },
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
+                        color: 'rgba(0, 0, 0, 0.08)',
                         drawBorder: false
                     },
                     title: {
                         display: true,
-                        text: 'Cantidad ($)',
+                        text: 'Ingresos / Costos ($)',
                         font: { size: 12, weight: 'bold' }
                     }
                 },
-                y1: {
-                    type: 'linear',
-                    display: false,
-                    position: 'right',
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value.toFixed(0);
-                        }
-                    }
-                },
                 x: {
+                    display: true,
                     grid: {
                         display: false,
                         drawBorder: false
                     },
                     ticks: {
-                        font: { size: 11 }
+                        font: { size: 11 },
+                        color: '#666'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Días del mes',
+                        font: { size: 12, weight: 'bold' }
                     }
                 }
             },
@@ -539,33 +593,39 @@ function actualizarGrafico() {
                     const xScale = chart.scales.x;
                     const yScale = chart.scales.y;
                     
-                    // Obtener posición X del punto de equilibrio
+                    // Posición del punto de equilibrio
                     const xPos = xScale.getPixelForValue(indexEquilibrio);
                     const yPos = yScale.getPixelForValue(puntoEquilibrio.monto);
                     
-                    // Dibujar línea vertical
+                    // Línea vertical punteada
                     ctx.save();
-                    ctx.strokeStyle = '#42a5f5';
-                    ctx.lineWidth = 3;
-                    ctx.setLineDash([5, 5]);
+                    ctx.strokeStyle = '#2196F3';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
                     ctx.beginPath();
                     ctx.moveTo(xPos, chart.chartArea.top);
                     ctx.lineTo(xPos, chart.chartArea.bottom);
                     ctx.stroke();
                     
-                    // Dibujar círculo en el punto exacto
-                    ctx.fillStyle = '#42a5f5';
-                    ctx.strokeStyle = '#1976d2';
+                    // Línea horizontal punteada
+                    ctx.beginPath();
+                    ctx.moveTo(chart.chartArea.left, yPos);
+                    ctx.lineTo(chart.chartArea.right, yPos);
+                    ctx.stroke();
+                    
+                    // Círculo grande en el punto de equilibrio
+                    ctx.fillStyle = '#2196F3';
+                    ctx.strokeStyle = '#1565c0';
                     ctx.lineWidth = 3;
                     ctx.beginPath();
-                    ctx.arc(xPos, yPos, 8, 0, 2 * Math.PI);
+                    ctx.arc(xPos, yPos, 10, 0, 2 * Math.PI);
                     ctx.fill();
                     ctx.stroke();
                     
-                    // Dibujar punto interior blanco
+                    // Punto blanco en el centro
                     ctx.fillStyle = 'white';
                     ctx.beginPath();
-                    ctx.arc(xPos, yPos, 4, 0, 2 * Math.PI);
+                    ctx.arc(xPos, yPos, 5, 0, 2 * Math.PI);
                     ctx.fill();
                     
                     ctx.restore();
