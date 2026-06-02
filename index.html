@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Financiero - Mes y Año</title>
+    <title>Análisis Financiero - Punto de Equilibrio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <style>
         * {
@@ -23,6 +23,21 @@
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .titulo-dinamico {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #eee;
+        }
+        .titulo-dinamico h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .titulo-dinamico p {
+            font-size: 13px;
+            color: #999;
+            margin: 0;
         }
         .header {
             display: flex;
@@ -120,34 +135,29 @@
             display: none;
             margin-bottom: 24px;
         }
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 12px;
+            color: #1565c0;
+            margin-bottom: 16px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <label for="anoSelect">Año:</label>
-        <select id="anoSelect">
-            <option value="2024" selected>2024</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-        </select>
-        
-        <label for="mesSelect" style="margin-left: 24px;">Mes:</label>
-        <select id="mesSelect">
-            <option value="01">Enero</option>
-            <option value="02">Febrero</option>
-            <option value="03">Marzo</option>
-            <option value="04">Abril</option>
-            <option value="05" selected>Mayo</option>
-            <option value="06">Junio</option>
-            <option value="07">Julio</option>
-            <option value="08">Agosto</option>
-            <option value="09">Septiembre</option>
-            <option value="10">Octubre</option>
-            <option value="11">Noviembre</option>
-            <option value="12">Diciembre</option>
-        </select>
+    <!-- TÍTULO DINÁMICO -->
+    <div class="titulo-dinamico">
+        <h1 id="tituloMes">Análisis Financiero - Mayo 2025</h1>
+        <p id="subtituloMes">Datos cargados desde AppSheet</p>
+    </div>
+
+    <div class="info-box" id="infoBox">
+        ℹ️ Datos cargados dinámicamente desde tu aplicación
     </div>
 
     <div class="sin-datos" id="sinDatos">
@@ -156,13 +166,13 @@
 
     <div id="puntoEquilibrioInfo" class="equilibrio-info">
         <h3>📍 Punto de Equilibrio</h3>
-        <p>Día <span id="diaEquilibrio">--</span></p>
-        <small>Ingresos = Costos Totales en <span id="montoEquilibrio">$0.00</span></small>
+        <p id="diaEquilibrio">--</p>
+        <small>Monto: <span id="montoEquilibrio">$0.00</span></small>
     </div>
 
     <div class="metrics">
         <div class="metric-card">
-            <label>Venta Total</label>
+            <label>Ingresos Totales</label>
             <div class="value" style="color: #0F6E56;" id="totalVenta">$0.00</div>
         </div>
         <div class="metric-card">
@@ -194,71 +204,65 @@
 
 <script>
 // ============================================
-// INSTRUCCIONES PARA APPSHEET
+// LEER PARÁMETROS DESDE APPSHEET
 // ============================================
-// 1. En AppSheet, agrega esta tabla como referencia:
-//    - Tabla: detalleorden
-//    - Columnas esperadas: date, comision, precio_venta, total_entrada
-//
-// 2. Para pasar datos desde AppSheet al componente:
-//    a) Opción A - Desde una acción personalizada:
-//       window.actualizarDatos(datosArray, gastosFijosObj);
-//
-//    b) Opción B - Inyectar datos en la carga:
-//       Reemplaza los datos de prueba abajo con tus datos reales
-//
-// ============================================
+function obtenerParametrosURL() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        ano: params.get('ano') || '2025',
+        mes: params.get('mes') || '05',
+        gastosFijos: parseFloat(params.get('gastosFijos')) || 5000,
+        ingresos: parseFloat(params.get('ingresos')) || 0,
+        comisiones: parseFloat(params.get('comisiones')) || 0,
+        costos: parseFloat(params.get('costos')) || 0
+    };
+}
 
-// DATOS DE PRUEBA - Reemplazar con datos de AppSheet
-let datosGlobales = [
-    // MAYO 2024
-    { date: '05/01/2024', comision: 150.00, precio_venta: 800.00, total_entrada: 950.00 },
-    { date: '05/01/2024', comision: 75.50, precio_venta: 420.00, total_entrada: 495.50 },
-    { date: '05/03/2024', comision: 220.00, precio_venta: 1200.00, total_entrada: 1420.00 },
-    { date: '05/05/2024', comision: 110.25, precio_venta: 650.00, total_entrada: 760.25 },
-    { date: '05/05/2024', comision: 89.75, precio_venta: 550.00, total_entrada: 639.75 },
-    { date: '05/08/2024', comision: 340.00, precio_venta: 1800.00, total_entrada: 2140.00 },
-    { date: '05/10/2024', comision: 95.50, precio_venta: 520.00, total_entrada: 615.50 },
-    { date: '05/12/2024', comision: 275.00, precio_venta: 1500.00, total_entrada: 1775.00 },
-    { date: '05/15/2024', comision: 160.00, precio_venta: 900.00, total_entrada: 1060.00 },
-    { date: '05/18/2024', comision: 420.75, precio_venta: 2200.00, total_entrada: 2620.75 },
-    { date: '05/20/2024', comision: 185.25, precio_venta: 1050.00, total_entrada: 1235.25 },
-    { date: '05/22/2024', comision: 250.00, precio_venta: 1400.00, total_entrada: 1650.00 },
-    { date: '05/25/2024', comision: 310.50, precio_venta: 1700.00, total_entrada: 2010.50 },
-    { date: '05/28/2024', comision: 130.00, precio_venta: 750.00, total_entrada: 880.00 },
-    
-    // ABRIL 2024
-    { date: '04/15/2024', comision: 200.00, precio_venta: 1100.00, total_entrada: 1300.00 },
-    { date: '04/20/2024', comision: 150.00, precio_venta: 850.00, total_entrada: 1000.00 },
-    
-    // JUNIO 2024
-    { date: '06/05/2024', comision: 180.00, precio_venta: 950.00, total_entrada: 1130.00 },
-    { date: '06/10/2024', comision: 250.00, precio_venta: 1350.00, total_entrada: 1600.00 },
-    { date: '06/15/2024', comision: 300.00, precio_venta: 1600.00, total_entrada: 1900.00 },
-    { date: '06/20/2024', comision: 220.00, precio_venta: 1200.00, total_entrada: 1420.00 }
-];
-
-// GASTOS FIJOS POR MES - REEMPLAZAR CON VALORES REALES
-let gastosFijosGlobal = {
-    '01': 5000, '02': 5000, '03': 5000, '04': 5000, '05': 5000,
-    '06': 5000, '07': 5000, '08': 5000, '09': 5000, '10': 5000,
-    '11': 5000, '12': 5000
-};
-
+let parametrosActuales = obtenerParametrosURL();
 let chart = null;
 
-// Función para actualizar datos desde AppSheet
-window.actualizarDatos = function(datos, gastosFijos) {
-    datosGlobales = datos;
-    gastosFijosGlobal = gastosFijos;
-    actualizarGrafico();
-};
+// Meses en español
+const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+function crearDatosSimulados() {
+    const mesNum = parseInt(parametrosActuales.mes);
+    const anoNum = parseInt(parametrosActuales.ano);
+    
+    const datos = [];
+    const diasTrabajo = [1, 3, 5, 8, 10, 12, 15, 18, 20, 22, 25, 28];
+    
+    diasTrabajo.forEach((dia, index) => {
+        const peso = (index + 1) / diasTrabajo.length;
+        datos.push({
+            date: `${parametrosActuales.mes}/${dia}/${parametrosActuales.ano}`,
+            comision: Math.round(parametrosActuales.comisiones * peso * 100) / 100,
+            precio_venta: Math.round(parametrosActuales.costos * peso * 100) / 100,
+            total_entrada: Math.round(parametrosActuales.ingresos * peso * 100) / 100
+        });
+    });
+    
+    return datos;
+}
+
+let datosGlobales = crearDatosSimulados();
 
 function actualizarGrafico() {
-    const ano = document.getElementById('anoSelect').value;
-    const mes = document.getElementById('mesSelect').value;
+    const ano = parametrosActuales.ano;
+    const mes = parametrosActuales.mes;
     
-    // Filtrar datos por año y mes (formato: mm/dd/yyyy)
+    // Actualizar título
+    const mesNum = parseInt(mes);
+    document.getElementById('tituloMes').textContent = `${meses[mesNum]} ${ano}`;
+    document.getElementById('subtituloMes').textContent = `Análisis financiero del mes`;
+    
+    // Mostrar info si vienen parámetros
+    const hayParametros = window.location.search.length > 0;
+    if (hayParametros) {
+        document.getElementById('infoBox').style.display = 'block';
+    }
+    
+    // Filtrar datos
     const datosFiltrados = datosGlobales.filter(item => {
         const partes = item.date.split('/');
         const itemMes = partes[0];
@@ -268,7 +272,7 @@ function actualizarGrafico() {
     
     // Mostrar mensaje si no hay datos
     const sinDatosDiv = document.getElementById('sinDatos');
-    if (datosFiltrados.length === 0) {
+    if (datosFiltrados.length === 0 || parametrosActuales.ingresos === 0) {
         sinDatosDiv.style.display = 'block';
         if (chart) chart.destroy();
         document.getElementById('totalVenta').textContent = '$0.00';
@@ -290,9 +294,9 @@ function actualizarGrafico() {
         if (!datosPorDia[dia]) {
             datosPorDia[dia] = { comision: 0, precio_venta: 0, total_entrada: 0 };
         }
-        datosPorDia[dia].comision += item.comision;
-        datosPorDia[dia].precio_venta += item.precio_venta;
-        datosPorDia[dia].total_entrada += item.total_entrada;
+        datosPorDia[dia].comision += item.comision || 0;
+        datosPorDia[dia].precio_venta += item.precio_venta || 0;
+        datosPorDia[dia].total_entrada += item.total_entrada || 0;
     });
     
     const dias = Object.keys(datosPorDia).map(Number).sort((a, b) => a - b);
@@ -300,12 +304,12 @@ function actualizarGrafico() {
     // Calcular acumulados
     let acumVenta = 0, acumCostosVar = 0, acumComisiones = 0;
     const ventasAcum = [], costosVarAcum = [], comisionesAcum = [], costosTotalesAcum = [];
-    const costosFijos = gastosFijosGlobal[mes] || 5000;
+    const costosFijos = parametrosActuales.gastosFijos;
     
     dias.forEach(dia => {
-        acumVenta += datosPorDia[dia].total_entrada;
-        acumCostosVar += datosPorDia[dia].precio_venta;
-        acumComisiones += datosPorDia[dia].comision;
+        acumVenta += datosPorDia[dia].total_entrada || 0;
+        acumCostosVar += datosPorDia[dia].precio_venta || 0;
+        acumComisiones += datosPorDia[dia].comision || 0;
         
         ventasAcum.push(Math.round(acumVenta * 100) / 100);
         costosVarAcum.push(Math.round(acumCostosVar * 100) / 100);
@@ -325,8 +329,8 @@ function actualizarGrafico() {
     const infoDiv = document.getElementById('puntoEquilibrioInfo');
     if (puntoEquilibrio) {
         infoDiv.style.display = 'block';
-        document.getElementById('diaEquilibrio').textContent = puntoEquilibrio.dia;
-        document.getElementById('montoEquilibrio').textContent = '$' + puntoEquilibrio.monto.toLocaleString('en-US', {minimumFractionDigits: 2});
+        document.getElementById('diaEquilibrio').textContent = `Día ${puntoEquilibrio.dia}`;
+        document.getElementById('montoEquilibrio').textContent = '$' + puntoEquilibrio.monto.toLocaleString('es-ES', {minimumFractionDigits: 2});
     } else {
         infoDiv.style.display = 'none';
     }
@@ -336,9 +340,9 @@ function actualizarGrafico() {
     const gananciaNeta = totalVenta - totalCostos;
     const margen = totalVenta > 0 ? Math.round((gananciaNeta / totalVenta) * 100) : 0;
     
-    document.getElementById('totalVenta').textContent = '$' + totalVenta.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('totalCostos').textContent = '$' + totalCostos.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('gananciaNeta').textContent = '$' + gananciaNeta.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('totalVenta').textContent = '$' + totalVenta.toLocaleString('es-ES', {minimumFractionDigits: 2});
+    document.getElementById('totalCostos').textContent = '$' + totalCostos.toLocaleString('es-ES', {minimumFractionDigits: 2});
+    document.getElementById('gananciaNeta').textContent = '$' + gananciaNeta.toLocaleString('es-ES', {minimumFractionDigits: 2});
     document.getElementById('gananciaNeta').style.color = gananciaNeta >= 0 ? '#0F6E56' : '#E24B4A';
     document.getElementById('margenPorcentaje').textContent = margen + '%';
     document.getElementById('margenPorcentaje').style.color = margen >= 0 ? '#0F6E56' : '#E24B4A';
@@ -354,7 +358,7 @@ function actualizarGrafico() {
             labels: dias.map(d => 'Día ' + d),
             datasets: [
                 {
-                    label: 'Venta Total (acum)',
+                    label: 'Ingresos Acumulados',
                     data: ventasAcum,
                     borderColor: '#0F6E56',
                     backgroundColor: 'rgba(15, 110, 86, 0.06)',
@@ -367,7 +371,7 @@ function actualizarGrafico() {
                     fill: false
                 },
                 {
-                    label: 'Total Costos (acum)',
+                    label: 'Total Costos (Acumulado)',
                     data: costosTotalesAcum,
                     borderColor: '#853D0B',
                     backgroundColor: 'rgba(133, 61, 11, 0.06)',
@@ -380,7 +384,7 @@ function actualizarGrafico() {
                     fill: false
                 },
                 {
-                    label: 'Costos Variables (acum)',
+                    label: 'Costos Variables (Acum)',
                     data: costosVarAcum,
                     borderColor: '#BA7517',
                     backgroundColor: 'rgba(186, 117, 23, 0.06)',
@@ -393,7 +397,7 @@ function actualizarGrafico() {
                     fill: false
                 },
                 {
-                    label: 'Comisiones (acum)',
+                    label: 'Comisiones (Acum)',
                     data: comisionesAcum,
                     borderColor: '#E24B4A',
                     backgroundColor: 'rgba(226, 75, 74, 0.06)',
@@ -466,9 +470,8 @@ function actualizarGrafico() {
     });
 }
 
-document.getElementById('anoSelect').addEventListener('change', actualizarGrafico);
-document.getElementById('mesSelect').addEventListener('change', actualizarGrafico);
-actualizarGrafico();
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded', actualizarGrafico);
 </script>
 
 </body>
