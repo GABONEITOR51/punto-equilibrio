@@ -597,36 +597,84 @@ function dibujarGrafico(dias, ventasAcum, costosTotalesAcum, costosVarAcum, cost
                     const xPos = xScale.getPixelForValue(indexEquilibrio);
                     const yPos = yScale.getPixelForValue(puntoEquilibrio.monto);
                     
-                    // Línea vertical punteada
                     ctx.save();
+                    
+                    // ===== LÍNEA VERTICAL PUNTEADA =====
                     ctx.strokeStyle = '#2196F3';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([6, 4]);
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([8, 5]);
                     ctx.beginPath();
                     ctx.moveTo(xPos, chart.chartArea.top);
                     ctx.lineTo(xPos, chart.chartArea.bottom);
                     ctx.stroke();
                     
-                    // Línea horizontal punteada
+                    // ===== LÍNEA HORIZONTAL PUNTEADA =====
                     ctx.beginPath();
                     ctx.moveTo(chart.chartArea.left, yPos);
                     ctx.lineTo(chart.chartArea.right, yPos);
                     ctx.stroke();
                     
-                    // Círculo grande en el punto de equilibrio
-                    ctx.fillStyle = '#2196F3';
-                    ctx.strokeStyle = '#1565c0';
-                    ctx.lineWidth = 3;
+                    ctx.setLineDash([]);
+                    
+                    // ===== HALO/GLOW ALREDEDOR DEL CÍRCULO =====
+                    ctx.fillStyle = 'rgba(33, 150, 243, 0.15)';
                     ctx.beginPath();
-                    ctx.arc(xPos, yPos, 10, 0, 2 * Math.PI);
+                    ctx.arc(xPos, yPos, 28, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = 'rgba(33, 150, 243, 0.25)';
+                    ctx.beginPath();
+                    ctx.arc(xPos, yPos, 20, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // ===== CÍRCULO PRINCIPAL (MÁS GRANDE) =====
+                    // Sombra
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(xPos + 2, yPos + 2, 16, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Círculo azul
+                    ctx.fillStyle = '#2196F3';
+                    ctx.strokeStyle = '#0d47a1';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(xPos, yPos, 16, 0, 2 * Math.PI);
                     ctx.fill();
                     ctx.stroke();
                     
-                    // Punto blanco en el centro
+                    // Anillo interno blanco
                     ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(xPos, yPos, 10, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Punto central
+                    ctx.fillStyle = '#2196F3';
                     ctx.beginPath();
                     ctx.arc(xPos, yPos, 5, 0, 2 * Math.PI);
                     ctx.fill();
+                    
+                    // ===== ETIQUETA DE TEXTO =====
+                    ctx.font = 'bold 13px Arial, sans-serif';
+                    ctx.fillStyle = '#0d47a1';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    
+                    const textoX = xPos;
+                    const textoY = yPos - 30;
+                    
+                    // Fondo blanco para el texto
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                    ctx.strokeStyle = '#2196F3';
+                    ctx.lineWidth = 2;
+                    ctx.fillRect(textoX - 85, textoY - 20, 170, 25);
+                    ctx.strokeRect(textoX - 85, textoY - 20, 170, 25);
+                    
+                    // Texto
+                    ctx.fillStyle = '#0d47a1';
+                    ctx.font = 'bold 12px Arial, sans-serif';
+                    ctx.fillText('🎯 PUNTO DE EQUILIBRIO', textoX, textoY - 2);
                     
                     ctx.restore();
                 }
